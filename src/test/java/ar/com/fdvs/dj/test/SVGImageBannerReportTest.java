@@ -29,44 +29,36 @@
 
 package ar.com.fdvs.dj.test;
 
-import java.awt.Color;
-import java.text.FieldPosition;
-import java.text.Format;
-import java.text.ParsePosition;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-
-import net.sf.jasperreports.view.JasperViewer;
-import ar.com.fdvs.dj.domain.AutoText;
-import ar.com.fdvs.dj.domain.CustomExpression;
 import ar.com.fdvs.dj.domain.DJCalculation;
-import ar.com.fdvs.dj.domain.DJChart;
 import ar.com.fdvs.dj.domain.DynamicReport;
 import ar.com.fdvs.dj.domain.ImageBanner;
 import ar.com.fdvs.dj.domain.Style;
 import ar.com.fdvs.dj.domain.builders.ColumnBuilder;
-import ar.com.fdvs.dj.domain.builders.DJChartBuilder;
 import ar.com.fdvs.dj.domain.builders.DynamicReportBuilder;
 import ar.com.fdvs.dj.domain.builders.GroupBuilder;
-import ar.com.fdvs.dj.domain.constants.Border;
 import ar.com.fdvs.dj.domain.constants.Font;
-import ar.com.fdvs.dj.domain.constants.GroupLayout;
-import ar.com.fdvs.dj.domain.constants.HorizontalAlign;
 import ar.com.fdvs.dj.domain.constants.Transparency;
-import ar.com.fdvs.dj.domain.constants.VerticalAlign;
+import ar.com.fdvs.dj.domain.constants.*;
 import ar.com.fdvs.dj.domain.entities.DJGroup;
 import ar.com.fdvs.dj.domain.entities.columns.AbstractColumn;
 import ar.com.fdvs.dj.domain.entities.columns.PropertyColumn;
+import net.sf.jasperreports.view.JasperViewer;
 
-public class ExpressionToGroupByReportTest extends BaseDjReportTest {
+import java.awt.*;
+
+public class SVGImageBannerReportTest extends BaseDjReportTest {
 
 	public DynamicReport buildReport() throws Exception {
 
 		Style detailStyle = new Style();
 		Style headerStyle = new Style();
-		headerStyle.setFont(Font.ARIAL_MEDIUM_BOLD); headerStyle.setBorder(Border.PEN_2_POINT());
-		headerStyle.setHorizontalAlign(HorizontalAlign.CENTER); headerStyle.setVerticalAlign(VerticalAlign.MIDDLE);
+		headerStyle.setFont(Font.VERDANA_MEDIUM_BOLD);
+		headerStyle.setBorderBottom(Border.PEN_2_POINT());
+		headerStyle.setHorizontalAlign(HorizontalAlign.CENTER);
+		headerStyle.setVerticalAlign(VerticalAlign.MIDDLE);
+		headerStyle.setBackgroundColor(Color.DARK_GRAY);
+		headerStyle.setTextColor(Color.WHITE);
+		headerStyle.setTransparency(Transparency.OPAQUE);
 
 		Style titleStyle = new Style();
 		titleStyle.setFont(new Font(18,Font._FONT_VERDANA,true));
@@ -87,29 +79,14 @@ public class ExpressionToGroupByReportTest extends BaseDjReportTest {
 			.setTopMargin(margin)
 			.setBottomMargin(margin)
 			.setPrintBackgroundOnOddRows(true)
-			.setPrintColumnNames(false)
 			.setOddRowBackgroundStyle(oddRowStyle)
-			.addFirstPageImageBanner(System.getProperty("user.dir") +"/target/test-classes/images/logo_fdv_solutions_60.png", 197, 60, ImageBanner.Alignment.Left)
-			.addFirstPageImageBanner(System.getProperty("user.dir") +"/target/test-classes/images/dynamicJasper_60.jpg", 300, 60, ImageBanner.Alignment.Right)
-			.addImageBanner(System.getProperty("user.dir") +"/target/test-classes/images/logo_fdv_solutions_60.png", 100, 30, ImageBanner.Alignment.Left)
-			.addImageBanner(System.getProperty("user.dir") +"/target/test-classes/images/dynamicJasper_60.jpg", 150, 30, ImageBanner.Alignment.Right);
+			.addFirstPageImageBanner(System.getProperty("user.dir") +"/target/test-classes/images/Android_sample.svg", 197, 200, ImageBanner.Alignment.Left)
+			.addImageBanner(System.getProperty("user.dir") +"/target/test-classes/images/logo_fdv_solutions_60.png", 100, 25, ImageBanner.Alignment.Left, ImageScaleMode.FILL)
+			.addImageBanner(System.getProperty("user.dir") +"/target/test-classes/images/dynamicJasper_60.jpg", 150, 25, ImageBanner.Alignment.Right, ImageScaleMode.FILL);
 
 		AbstractColumn columnState = ColumnBuilder.getNew().setColumnProperty("state", String.class.getName())
 			.setTitle("State").setWidth(new Integer(85))
-			.setCustomExpressionToGroupBy(new CustomExpression(){
-				
-				Random rd = new Random();
-
-				public Object evaluate(Map fields, Map variables, Map parameters) {					
-					return rd.nextFloat()+"";
-				}
-
-				public String getClassName() {
-					return String.class.getName();
-				}
-				
-			})
-			.setStyle(detailStyle).setHeaderStyle(headerStyle).build();
+			.setStyle(titleStyle).setHeaderStyle(headerStyle).build();
 
 		AbstractColumn columnBranch = ColumnBuilder.getNew().setColumnProperty("branch", String.class.getName())
 			.setTitle("Branch").setWidth(new Integer(85))
@@ -135,28 +112,6 @@ public class ExpressionToGroupByReportTest extends BaseDjReportTest {
 			.setTitle("Amount").setWidth(new Integer(90)).setPattern("$ 0.00")
 			.setStyle(importeStyle).setHeaderStyle(headerStyle).build();
 
-		AbstractColumn columnaCode = ColumnBuilder.getNew().setColumnProperty("code.code", String.class.getName())
-		.setTitle("Code").setWidth(new Integer(85))
-		.setStyle(detailStyle).setHeaderStyle(headerStyle).build();		
-		
-		Format textFormatter = new Format(){
-
-			public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos) {
-				if (obj == null || Boolean.FALSE.equals(obj))
-					toAppendTo.append("No");
-				else
-					toAppendTo.append("Yes");
-				
-				return toAppendTo;
-			}
-
-			public Object parseObject(String source, ParsePosition pos) {
-				return null;
-			}};
-		AbstractColumn columnavailable = ColumnBuilder.getNew().setColumnProperty("isAvailable", Boolean.class.getName())
-		.setTitle("In stock").setWidth(new Integer(40)).setTextFormatter(textFormatter)
-		.setStyle(importeStyle).setHeaderStyle(headerStyle).build();
-
 
 		GroupBuilder gb1 = new GroupBuilder();
 		DJGroup g1 = gb1.setCriteriaColumn((PropertyColumn) columnState)		//define the criteria column to group by (columnState)
@@ -165,7 +120,7 @@ public class ExpressionToGroupByReportTest extends BaseDjReportTest {
 																					//values of the columnAmount in this group.
 
 			.addFooterVariable(columnaQuantity,DJCalculation.SUM)	//idem for the columnaQuantity column
-			.setGroupLayout(GroupLayout.DEFAULT_WITH_HEADER)				//tells the group how to be shown, there are many			
+			.setGroupLayout(GroupLayout.VALUE_IN_HEADER)				//tells the group how to be shown, there are many
 																					//posibilities, see the GroupLayout for more.
 			.build();
 
@@ -182,41 +137,20 @@ public class ExpressionToGroupByReportTest extends BaseDjReportTest {
 		drb.addColumn(columnCode);
 		drb.addColumn(columnaQuantity);
 		drb.addColumn(columnAmount);
-		drb.addColumn(columnavailable);
-		drb.addColumn(columnaCode);
 
 		drb.addGroup(g1);	//add group g1
 //		drb.addGroup(g2);	//add group g2
 
 		drb.setUseFullPageWidth(true);
 
-		//Autotext
-		drb.addAutoText(AutoText.AUTOTEXT_CREATED_ON, AutoText.POSITION_HEADER, AutoText.ALIGNMENT_LEFT,AutoText.PATTERN_DATE_DATE_TIME);
-		drb.addAutoText(AutoText.AUTOTEXT_PAGE_X_OF_Y, AutoText.POSITION_FOOTER, AutoText.ALIGNMENT_LEFT);
-
-		//i18N
-		drb.setReportLocale(Locale.ENGLISH);
-
-		//Charts
-		DJChartBuilder cb = new DJChartBuilder();
-		DJChart chart =  cb.setType(DJChart.BAR_CHART)
-						.setOperation(DJChart.CALCULATION_SUM)
-						.setColumnsGroup(g1).setHeight(150)
-						.addColumn(columnAmount)
-						.build();
-
-		drb.addChart(chart); //add chart
-
 		DynamicReport dr = drb.build();
 		return dr;
 	}
 
 	public static void main(String[] args) throws Exception {
-		ExpressionToGroupByReportTest test = new ExpressionToGroupByReportTest();
+		SVGImageBannerReportTest test = new SVGImageBannerReportTest();
 		test.testReport();
 		JasperViewer.viewReport(test.jp);
-//		JasperDesignViewer.viewReportDesign(test.jr);
-//		JRXmlWriter.writeReport(test.jr, "e:\\temp\\reporte.jrxml", "UTF-8");
 	}
 
 }
