@@ -32,11 +32,13 @@ package ar.com.fdvs.dj.core.layout;
 import ar.com.fdvs.dj.core.DJException;
 import ar.com.fdvs.dj.domain.DJChart;
 import ar.com.fdvs.dj.domain.DJChartOptions;
+import ar.com.fdvs.dj.domain.DJCrosstab;
 import ar.com.fdvs.dj.domain.DJWaterMark;
 import ar.com.fdvs.dj.domain.DynamicJasperDesign;
 import ar.com.fdvs.dj.domain.DynamicReport;
 import ar.com.fdvs.dj.domain.Style;
 import ar.com.fdvs.dj.domain.builders.DataSetFactory;
+import ar.com.fdvs.dj.domain.constants.Border;
 import ar.com.fdvs.dj.domain.constants.Transparency;
 import ar.com.fdvs.dj.domain.entities.DJColSpan;
 import ar.com.fdvs.dj.domain.entities.DJGroup;
@@ -53,6 +55,7 @@ import ar.com.fdvs.dj.util.LayoutUtils;
 import ar.com.fdvs.dj.util.Utils;
 import ar.com.fdvs.dj.util.WaterMarkRenderer;
 import net.sf.jasperreports.charts.design.JRDesignBarPlot;
+import net.sf.jasperreports.crosstabs.design.JRDesignCrosstab;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGroup;
@@ -68,6 +71,7 @@ import net.sf.jasperreports.engine.design.JRDesignExpression;
 import net.sf.jasperreports.engine.design.JRDesignGraphicElement;
 import net.sf.jasperreports.engine.design.JRDesignGroup;
 import net.sf.jasperreports.engine.design.JRDesignImage;
+import net.sf.jasperreports.engine.design.JRDesignRectangle;
 import net.sf.jasperreports.engine.design.JRDesignSection;
 import net.sf.jasperreports.engine.design.JRDesignStyle;
 import net.sf.jasperreports.engine.design.JRDesignTextElement;
@@ -83,13 +87,8 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Predicate;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Image;
@@ -103,6 +102,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Abstract Class used as base for the different Layout Managers.<br>
@@ -152,6 +152,7 @@ public abstract class AbstractLayoutManager implements LayoutManager {
             startLayout();
             applyWaterMark();
             transformDetailBand();
+            setSummaryBand();
             endLayout();
             setWhenNoDataBand();
             setBandsFinalHeight();
@@ -213,7 +214,48 @@ public abstract class AbstractLayoutManager implements LayoutManager {
         backgroundBand.addElement(image);
     }
 
+    protected void setSummaryBand() {
+    	JRDesignBand summary = (JRDesignBand) getDesign().getSummary();
+    	// only support crosstab in summary so far
+    	for (DJCrosstab djcross : getReport().getSummaryCrosstabs() ) {
+	    	
+	    	
+	    	Dj2JrCrosstabBuilder djcb = new Dj2JrCrosstabBuilder();
+	
+			JRDesignCrosstab crosst = djcb.createCrosstab(djcross, this);
+			
+			int yOffset = LayoutUtils.findVerticalOffset(summary);
+			if (djcross.getTopSpace() != 0) {
+				JRDesignRectangle rect = createBlankRectableCrosstab(djcross.getBottomSpace(), yOffset);
+				rect.setPositionType(PositionTypeEnum.FIX_RELATIVE_TO_TOP);
+				summary.addElement(rect);
+				crosst.setY(yOffset + djcross.getBottomSpace());
+			}
+	
+			summary.addElement(crosst);
+	
+			if (djcross.getBottomSpace() != 0) {
+				JRDesignRectangle rect = createBlankRectableCrosstab(djcross.getBottomSpace(), crosst.getY() + crosst.getHeight());
+				summary.addElement(rect);
+			}
+    	}
+    }
+    
+    protected JRDesignRectangle createBlankRectableCrosstab(int amount,int yOffset) {
+		JRDesignRectangle rect = new JRDesignRectangle();
 
+        LayoutUtils.convertBorderToPen(Border.NO_BORDER(), rect.getLinePen());
+
+		rect.setMode(ModeEnum.getByValue( Transparency.TRANSPARENT.getValue()) );
+//		rect.setMode(Transparency.OPAQUE.getValue());
+//		rect.setBackcolor(Color.RED);
+		rect.setWidth(getReport().getOptions().getPrintableWidth());
+		rect.setHeight(amount);
+		rect.setY(yOffset);
+		rect.setPositionType( PositionTypeEnum.FLOAT );
+		return rect;
+	}
+    
     /**
      * Creates the graphic element to be shown when the datasource is empty
      */
@@ -328,11 +370,9 @@ public abstract class AbstractLayoutManager implements LayoutManager {
 
     protected String createUniqueStyleName() {
         synchronized (this) {
-            int counter = getReportStyles().values().size() + 1;
-            String tryName = "dj_style_" + counter + "_"; //FIX for issue 3002761 @SF tracker
-            while (design.getStylesMap().get(tryName) != null) {
-                counter++;
-                tryName = "dj_style_" + counter;
+            String tryName = "dj_style_" + Math.random() + "_"; //FIX for issue 3002761 @SF tracker
+            if (design.getStylesMap().get(tryName) != null) {
+                return createUniqueStyleName();
             }
             return tryName;
         }
@@ -590,14 +630,14 @@ public abstract class AbstractLayoutManager implements LayoutManager {
         designElemen.setStyle(jrstyle);
         if (designElemen instanceof JRDesignTextElement) {
             JRDesignTextElement textField = (JRDesignTextElement) designElemen;
-            if (style.getStreching() != null)
-                textField.setStretchType(StretchTypeEnum.getByValue(style.getStreching().getValue()));
+            if (style.getStretchType() != null)
+                textField.setStretchType(style.getStretchType());
             textField.setPositionType(PositionTypeEnum.FLOAT);
 
         }
         if (designElemen instanceof JRDesignTextField) {
             JRDesignTextField textField = (JRDesignTextField) designElemen;
-            textField.setStretchWithOverflow(style.isStretchWithOverflow());
+            textField.setTextAdjust(style.getTextAdjust());
 
             if (!textField.isBlankWhenNull() && style.isBlankWhenNull()) //TODO Re check if this condition is ok
                 textField.setBlankWhenNull(true);
@@ -605,7 +645,7 @@ public abstract class AbstractLayoutManager implements LayoutManager {
 
         if (designElemen instanceof JRDesignGraphicElement) {
             JRDesignGraphicElement graphicElement = (JRDesignGraphicElement) designElemen;
-            graphicElement.setStretchType(StretchTypeEnum.getByValue(style.getStreching().getValue()));
+            graphicElement.setStretchType(style.getStretchType());
             graphicElement.setPositionType(PositionTypeEnum.FLOAT);
         }
     }
@@ -650,12 +690,8 @@ public abstract class AbstractLayoutManager implements LayoutManager {
             int colFinalWidth;
 
             //Select the non-resizable columns
-            Collection resizableColumns = CollectionUtils.select(visibleColums, new Predicate() {
-                public boolean evaluate(Object arg0) {
-                    return !((AbstractColumn) arg0).isFixedWidth();
-                }
-
-            });
+            Collection resizableColumns = (Collection)visibleColums.stream().filter(i-> !((AbstractColumn)i).isFixedWidth())
+              .collect(Collectors.toList());
 
             //Finally, set the new width to the resizable columns
             for (Iterator iter = resizableColumns.iterator(); iter.hasNext(); ) {
@@ -816,8 +852,7 @@ public abstract class AbstractLayoutManager implements LayoutManager {
             textField.setMarkup(col.getMarkup().toLowerCase());
 
         textField.setPrintRepeatedValues(col.isPrintRepeatedValues());
-
-        textField.setPrintWhenDetailOverflows(true);
+		textField.setPrintWhenDetailOverflows(col.isPrintWhenDetailOverflows());
 
         Style columnStyle = col.getStyle();
         if (columnStyle == null)
@@ -987,14 +1022,14 @@ public abstract class AbstractLayoutManager implements LayoutManager {
      */
     protected void layoutCharts() {
         //Pre-sort charts by group column
-        MultiValuedMap<DJGroup, DJChart> mmap = new ArrayListValuedHashMap<DJGroup, DJChart>();
+        Map<DJGroup, List<DJChart>> mmap = new HashMap<>();
         for (DJChart djChart : getReport().getCharts()) {
-            mmap.put(djChart.getColumnsGroup(), djChart);
+            mmap.computeIfAbsent(djChart.getColumnsGroup(), (key)-> new ArrayList<>()).add(djChart);
         }
 
         for (DJGroup key : mmap.keySet()) {
-            Collection<DJChart> charts = mmap.get(key);
-            List<DJChart> l = new ArrayList<DJChart>(charts);
+            List<DJChart> charts = mmap.get(key);
+            List<DJChart> l = new ArrayList<>(charts);
             //Reverse iteration of the charts to meet insertion order
             for (int i = l.size(); i > 0; i--) {
                 DJChart djChart = l.get(i - 1);
@@ -1007,14 +1042,14 @@ public abstract class AbstractLayoutManager implements LayoutManager {
         }
 
         //Pre-sort charts by group column
-        MultiValuedMap<PropertyColumn, ar.com.fdvs.dj.domain.chart.DJChart> mmap2 = new ArrayListValuedHashMap<PropertyColumn, ar.com.fdvs.dj.domain.chart.DJChart>();
+        Map<PropertyColumn, List<ar.com.fdvs.dj.domain.chart.DJChart>> mmap2 = new HashMap<>();
         for (ar.com.fdvs.dj.domain.chart.DJChart djChart : getReport().getNewCharts()) {
-            mmap2.put(djChart.getDataset().getColumnsGroup(), djChart);
+            mmap2.computeIfAbsent(djChart.getDataset().getColumnsGroup(), (key)->new ArrayList<>()).add(djChart);
         }
 
         for (PropertyColumn key : mmap2.keySet()) {
-            Collection<ar.com.fdvs.dj.domain.chart.DJChart> charts = mmap2.get(key);
-            ArrayList<ar.com.fdvs.dj.domain.chart.DJChart> l = new ArrayList<ar.com.fdvs.dj.domain.chart.DJChart>(charts);
+            List<ar.com.fdvs.dj.domain.chart.DJChart> charts = mmap2.get(key);
+            ArrayList<ar.com.fdvs.dj.domain.chart.DJChart> l = new ArrayList<>(charts);
             //Reverse iteration of the charts to meet insertion order
             for (int i = l.size(); i > 0; i--) {
                 ar.com.fdvs.dj.domain.chart.DJChart djChart = l.get(i - 1);

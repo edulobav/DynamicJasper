@@ -34,6 +34,116 @@
         <author email="juan.alvarez@fdvsolutions.com">Juan Manuel Alvarez</author>
     </properties>
     <body>
+        <release version="5.3.9" date="2023-08-16" desc="More Pull request">
+            <action dev="Juan Manuel Alvarez" type="Add" >
+                <![CDATA[Support for JasperReports 6.20.1+ (to 6.20.4 as of time of writing).
+                At the time of writing, JR 6.20.5 is available, but it has this bug: https://community.jaspersoft.com/jasperreports-library/issues/3127-0 which affects
+                the layout of sub-reports heavily. If you don't use sub-reports, it is safe to use JR 6.20.5
+                ]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Change" >
+                <![CDATA[Removed support to WebWork and Struts2 as part of the main core. Maybe adding it as a separated artifact]]>
+            </action>
+        </release>
+        <release version="5.3.8" date="2023-03-04" desc="More Pull request">
+            <action dev="Juan Manuel Alvarez" type="Add" >
+                <![CDATA[fix for https://github.com/intive-FDV/DynamicJasper/issues/118 Subreport styled
+                headers / not styled correctly (when exported to docx)]]>
+            </action>
+        </release>
+        <release version="5.3.7" date="2023-03-04" desc="More Pull request">
+            <action dev="oyarzun" type="Add" >
+                <![CDATA[Update deprecated code in latest JasperReports #135 https://github.com/intive-FDV/DynamicJasper/pull/135 ,
+                    JasperReport min and max version are now: 6.11.0 and 6.20.0
+                ]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Add" >
+                <![CDATA[bumped some dependencies versions]]>
+            </action>
+        </release>
+        <release version="5.3.6" date="2022-08-16" desc="Pull request season">
+            <action dev="jherkel - Jakub Herkel" type="Add" >
+                <![CDATA[add OSGI headers to MANIFEST.MF https://github.com/intive-FDV/DynamicJasper/pull/132]]>
+            </action>
+            <action dev="jherkel - Jakub Herkel" type="Add" >
+                <![CDATA[remove apache common collections https://github.com/intive-FDV/DynamicJasper/pull/130]]>
+            </action>
+            <action dev="jherkel - Jakub Herkel" type="Add" >
+                <![CDATA[fix compatibility with jasperreport 6.19.1 https://github.com/intive-FDV/DynamicJasper/pull/129]]>
+            </action>
+            <action dev="gschrader - Glen Schrader" type="Add" >
+                <![CDATA[allow the ability to specify incrementerFactoryClass on groupings: https://github.com/intive-FDV/DynamicJasper/pull/83]]>
+            </action>
+            <action dev="gschrader - Glen Schrader" type="Add" >
+                <![CDATA[allow for crosstabs in summary band: https://github.com/intive-FDV/DynamicJasper/pull/70]]>
+            </action>
+            <action dev="gschrader - Glen Schrader" type="Add" >
+                <![CDATA[Use main datasource directly for crosstabs that ask for it: https://github.com/intive-FDV/DynamicJasper/pull/69/]]>
+            </action>
+        </release>
+        <release version="5.3.5" date="2022-08-01" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Supports JasperReports 6.8.0 to 6.19.1]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Add" due-to="" issue="https://github.com/intive-FDV/DynamicJasper/pull/129">
+                <![CDATA[#124 - fix compatibility with jasperreport 6.19.1 #129]]>
+            </action>
+        </release>
+        <release version="5.3.4" date="2022-02-21" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Fix on autotext JR expression, not compiling in certain scenarios]]>
+            </action>
+        </release>
+        <release version="5.3.3" date="2022-02-21" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Supports JasperReports 6.8.0 to 6.18.1]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Version bump on dependencies due to vulnerabilities]]>
+            </action>
+        </release>
+        <release version="5.3.2" date="2021-05-31" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Supports JasperReports 6.8.0 to 6.17.0]]>
+            </action>
+        </release>
+        <release version="5.3.1" date="2020-07-23" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Supports JasperReports 6.8.0 to 6.13.0]]>
+            </action>
+        </release>
+        <release version="5.3.0" date="2020-03-23" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Compiled with Java 1.8]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Supports JasperReports 6.8.0 to 6.11.0]]>
+            </action>
+        </release>
+        <release version="5.2.0" date="2020-03-23" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Compiled with Java 1.8]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Supports JasperReports 6.6.0 to 6.7.1]]>
+            </action>
+        </release>
+        <release version="5.1.3" date="2020-03-23" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Compiled with Java 1.7]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Supports JasperReports 6.3.0 to 6.5.1]]>
+            </action>
+        </release>
+        <release version="5.1.2" date="2019-05-20" desc="">
+            <action dev="Juan Manuel Alvarez" type="Add">
+                <![CDATA[Crosttabs supports a comparator in both column and row]]>
+            </action>
+            <action dev="Juan Manuel Alvarez" type="Fix">
+                <![CDATA[Dependencies to core-fonts 2.0 which supports JasperReports 6.3.1+]]>
+            </action>
+        </release>
         <release version="5.1.1" date="2018-05-12" desc="">
             <action dev="Juan Manuel Alvarez" type="Add">
                 <![CDATA[Supports JasperReport 6.4.1]]>

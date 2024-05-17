@@ -29,6 +29,7 @@
 
 package ar.com.fdvs.dj.core.layout;
 
+import ar.com.fdvs.dj.core.DJConstants;
 import ar.com.fdvs.dj.core.DJDefaultScriptlet;
 import ar.com.fdvs.dj.core.registration.EntitiesRegistrationException;
 import ar.com.fdvs.dj.domain.*;
@@ -38,28 +39,13 @@ import ar.com.fdvs.dj.util.ExpressionUtils;
 import ar.com.fdvs.dj.util.HyperLinkUtil;
 import ar.com.fdvs.dj.util.LayoutUtils;
 import ar.com.fdvs.dj.util.Utils;
-import net.sf.jasperreports.crosstabs.design.JRDesignCellContents;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstab;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabBucket;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabCell;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabColumnGroup;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabDataset;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabMeasure;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabParameter;
-import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabRowGroup;
+import net.sf.jasperreports.crosstabs.design.*;
 import net.sf.jasperreports.crosstabs.fill.JRPercentageCalculatorFactory;
 import net.sf.jasperreports.crosstabs.type.CrosstabPercentageEnum;
 import net.sf.jasperreports.crosstabs.type.CrosstabTotalPositionEnum;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.design.JRDesignConditionalStyle;
-import net.sf.jasperreports.engine.design.JRDesignDataset;
-import net.sf.jasperreports.engine.design.JRDesignDatasetRun;
-import net.sf.jasperreports.engine.design.JRDesignExpression;
-import net.sf.jasperreports.engine.design.JRDesignField;
-import net.sf.jasperreports.engine.design.JRDesignStyle;
-import net.sf.jasperreports.engine.design.JRDesignTextField;
-import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.design.*;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.PositionTypeEnum;
@@ -67,7 +53,8 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.awt.Color;
+import java.awt.*;
+import java.util.List;
 import java.util.*;
 
 public class Dj2JrCrosstabBuilder {
@@ -147,12 +134,60 @@ public class Dj2JrCrosstabBuilder {
 		 */
 		createMainHeaderCell();
 
+		if (djcrosstab.getDatasource().getDataSourceOrigin() == DJConstants.DATA_SOURCE_ORIGIN_REPORT_DATASOURCE) {
+			// register just the fields
+			registerFields(djcrosstab);
+		} else {
 		/*
 		  Register DATASET
 		 */
-		registerDataSet(djcrosstab);
+			registerDataSet(djcrosstab);
+		}
 
 		return jrcross;
+	}
+
+	/**
+	 * Register the fields used in the crosstab with the main datasource
+	 * @param djcrosstab the crosstab
+	 */
+	private void registerFields(DJCrosstab djcrosstab) {
+		// add fields to the main datasource
+		for (DJCrosstabRow rowGroup : djcrosstab.getRows()) {
+
+			try {
+				JRDesignField field = new JRDesignField();
+				field.setName(rowGroup.getProperty().getProperty());
+				field.setValueClassName(rowGroup.getProperty().getValueClassName());
+				design.addField(field);
+			} catch (JRException e) {
+				log.error(e.getMessage(), e);
+			}
+		}
+
+		for (DJCrosstabColumn colGroup : djcrosstab.getColumns()) {
+
+			try {
+				JRDesignField field = new JRDesignField();
+				field.setName(colGroup.getProperty().getProperty());
+				field.setValueClassName(colGroup.getProperty().getValueClassName());
+				design.addField(field);
+			} catch (JRException e) {
+				log.error(e.getMessage(), e);
+			}
+		}
+
+		for (DJCrosstabMeasure measure : djcrosstab.getMeasures()) {
+
+			try {
+				JRDesignField field = new JRDesignField();
+				field.setName(measure.getProperty().getProperty());
+				field.setValueClassName(measure.getProperty().getValueClassName());
+				design.addField(field);
+			} catch (JRException e) {
+				log.error(e.getMessage(), e);
+			}
+		}
 	}
 
 	/**
@@ -684,6 +719,10 @@ public class Dj2JrCrosstabBuilder {
 			valueExp.setValueClassName(djmeasure.getProperty().getValueClassName());
 			valueExp.setText("$F{"+djmeasure.getProperty().getProperty()+"}");
 			measure.setValueExpression(valueExp);
+
+			if (djmeasure.getIncrementerFactoryClassName() != null) {
+				measure.setIncrementerFactoryClassName(djmeasure.getIncrementerFactoryClassName());
+			}
 
 			/*
 			  PRUEBA PORCENTAGE

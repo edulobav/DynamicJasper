@@ -29,19 +29,16 @@
 
 package ar.com.fdvs.dj.domain;
 
-import ar.com.fdvs.dj.domain.constants.*;
 import ar.com.fdvs.dj.domain.constants.Font;
 import ar.com.fdvs.dj.domain.constants.Transparency;
+import ar.com.fdvs.dj.domain.constants.*;
 import ar.com.fdvs.dj.domain.entities.Entity;
 import ar.com.fdvs.dj.util.LayoutUtils;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
 import net.sf.jasperreports.engine.base.JRBoxPen;
 import net.sf.jasperreports.engine.design.JRDesignConditionalStyle;
 import net.sf.jasperreports.engine.design.JRDesignStyle;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
-import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.RotationEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.*;
 
 import java.awt.*;
 import java.io.Serializable;
@@ -83,13 +80,18 @@ public class Style implements Serializable, Cloneable {
 
 	private Transparency transparency = Transparency.TRANSPARENT;
 
-    private VerticalAlign verticalAlign = VerticalAlign.BOTTOM;
-    private HorizontalAlign horizontalAlign = HorizontalAlign.LEFT;
+    private VerticalTextAlign verticalTextAlign = VerticalTextAlign.BOTTOM;
+    private VerticalImageAlign verticalImageAlign = VerticalImageAlign.BOTTOM;
+
+    private HorizontalTextAlign horizontalTextAlign = HorizontalTextAlign.LEFT;
+    private HorizontalImageAlign horizontalImageAlign = HorizontalImageAlign.LEFT;
+
     private Rotation rotation = Rotation.NONE;
 
-    private Stretching streching = Stretching.RELATIVE_TO_TALLEST_OBJECT;
+    private StretchTypeEnum stretchType = StretchTypeEnum.ELEMENT_GROUP_BOTTOM;
 
-    private boolean stretchWithOverflow = true;
+	private TextAdjustEnum textAdjust = TextAdjustEnum.STRETCH_HEIGHT;
+
     private boolean blankWhenNull = true;
 
     private String pattern;
@@ -99,6 +101,52 @@ public class Style implements Serializable, Cloneable {
      */
     private boolean overridesExistingStyle = false;
 
+	public Style(){}
+
+    public Style(String name){
+    	this.name = name;
+    }
+
+    public Style(String name, String parentName){
+    	this.name = name;
+    	this.parentStyleName = parentName;
+    }
+
+	/**
+	 * Creates a blank style (no default values).
+	 * Useful when we need a style with a parent style, not defined properties (null ones) will be inherited
+	 * from parent style
+	 *
+	 * @param name  style name
+	 * @return  Style
+	 */
+	public static Style createBlankStyle(String name){
+		Style style = new Style(name);
+
+		style.setBackgroundColor(null);
+		style.setBorderColor(null);
+		style.setTransparency(null);
+		style.setTextColor(null);
+		style.setBorder(null);
+		style.setFont(null);
+		style.setPadding(null);
+		style.setRadius(null);
+		style.setVerticalAlign(null);
+		style.setHorizontalAlign(null);
+		style.setRotation(null);
+		style.setStretchType(null);
+		style.SetTextAdjust(null);
+		
+		return style;
+
+	}
+
+	public static Style createBlankStyle(String name, String parent){
+		Style s = createBlankStyle(name);
+		s.setParentStyleName(parent);
+		return s;
+	}
+
     public boolean isOverridesExistingStyle() {
 		return overridesExistingStyle;
 	}
@@ -106,16 +154,6 @@ public class Style implements Serializable, Cloneable {
 	public void setOverridesExistingStyle(boolean overridesExistingStyle) {
 		this.overridesExistingStyle = overridesExistingStyle;
 	}
-
-	public Style(){}
-
-    public Style(String name){
-    	this.name = name;
-    }
-    public Style(String name, String parentName){
-    	this.name = name;
-    	this.parentStyleName = parentName;
-    }
 
 	public boolean isBlankWhenNull() {
 		return blankWhenNull;
@@ -151,12 +189,36 @@ public class Style implements Serializable, Cloneable {
 		else this.font = null;
 	}
 
-	public HorizontalAlign getHorizontalAlign() {
-		return horizontalAlign;
+	/**
+	 * @deprecated Use #Style.setHorizontalTextAlign(...) and #Style.setHorizontalImageAlign(...) instead
+	 * @param horizontalAlign
+	 */
+	@Deprecated
+	public void setHorizontalAlign(HorizontalAlign horizontalAlign) {
+		if (horizontalAlign == null) {
+			horizontalTextAlign = null;
+			horizontalImageAlign = null;
+		}
+		else {
+			horizontalTextAlign = HorizontalTextAlign.fromLegacy(horizontalAlign.getValue());
+			horizontalImageAlign = HorizontalImageAlign.fromLegacy(horizontalAlign.getValue());
+		}
 	}
 
-	public void setHorizontalAlign(HorizontalAlign horizontalAlign) {
-		this.horizontalAlign = horizontalAlign;
+	public HorizontalTextAlign getHorizontalTextAlign() {
+            return horizontalTextAlign;
+	}
+
+	public void setHorizontalTextAlign(HorizontalTextAlign horizontalTextAlign) {
+		this.horizontalTextAlign = horizontalTextAlign;
+	}
+
+	public HorizontalImageAlign getHorizontalImageAlign() {
+            return horizontalImageAlign;
+	}
+
+	public void setHorizontalImageAlign(HorizontalImageAlign horizontalImageAlign) {
+		this.horizontalImageAlign = horizontalImageAlign;
 	}
 
 	public Integer getPadding() {
@@ -167,20 +229,75 @@ public class Style implements Serializable, Cloneable {
 		this.padding = padding;
 	}
 
+	/**
+	 * @deprecated Use {@link #getStretchType(StretchTypeEnum)}
+	 * @return
+	 */
+	@Deprecated
 	public Stretching getStreching() {
-		return streching;
+		if (StretchTypeEnum.NO_STRETCH.equals(stretchType)) {
+			return Stretching.NO_STRETCH;
+		}
+		else if (StretchTypeEnum.RELATIVE_TO_TALLEST_OBJECT.equals(stretchType)) {
+			return Stretching.RELATIVE_TO_TALLEST_OBJECT;
+		}
+		else if (StretchTypeEnum.RELATIVE_TO_BAND_HEIGHT.equals(stretchType)) {
+			return Stretching.RELATIVE_TO_BAND_HEIGHT;
+		}
+		return null;
 	}
 
+	/**
+	 * @deprecated Use {@link #setStretchType(StretchTypeEnum)}
+	 * @param streching
+	 */
+	@Deprecated
 	public void setStreching(Stretching streching) {
-		this.streching = streching;
+		if (Stretching.NO_STRETCH.equals(streching)) {
+			stretchType = StretchTypeEnum.NO_STRETCH;
+		}
+		else if (Stretching.RELATIVE_TO_TALLEST_OBJECT.equals(streching)) {
+			stretchType = StretchTypeEnum.RELATIVE_TO_TALLEST_OBJECT;
+		}
+		else if (Stretching.RELATIVE_TO_BAND_HEIGHT.equals(streching)) {
+			stretchType = StretchTypeEnum.RELATIVE_TO_BAND_HEIGHT;
+		}
 	}
 
+	public StretchTypeEnum getStretchType() {
+		return stretchType;
+	}
+
+	public void setStretchType(StretchTypeEnum stretchType) {
+		this.stretchType = stretchType;
+	}
+
+	/**
+	 * @deprecated Use {@link #getTextAdjust()}
+	 * @return
+	 */
+	@Deprecated
 	public boolean isStretchWithOverflow() {
-		return stretchWithOverflow;
+		return TextAdjustEnum.STRETCH_HEIGHT.equals(textAdjust);
 	}
 
+	/**
+	 * @deprecated Use {@link #SetTextAdjust(TextAdjustEnum)}
+	 * @param stretchWithOverflow
+	 */
+    @Deprecated
 	public void setStretchWithOverflow(boolean stretchWithOverflow) {
-		this.stretchWithOverflow = stretchWithOverflow;
+		if (stretchWithOverflow) {
+			this.textAdjust = TextAdjustEnum.STRETCH_HEIGHT;
+		}		
+	}
+
+	public TextAdjustEnum getTextAdjust() {
+		return textAdjust;
+	}
+
+	public void SetTextAdjust(TextAdjustEnum textAdjust) {
+		this.textAdjust = textAdjust;
 	}
 
 	public Color getTextColor() {
@@ -199,6 +316,10 @@ public class Style implements Serializable, Cloneable {
 		this.transparency = transparency;
 	}
 
+	public boolean isTransparent(){
+		return this.transparency.equals(Transparency.TRANSPARENT);
+	}
+
 	public void setTransparent(boolean transparent) {
 		if (transparent)
 			this.setTransparency(Transparency.TRANSPARENT);
@@ -206,23 +327,43 @@ public class Style implements Serializable, Cloneable {
 			this.setTransparency(Transparency.OPAQUE);
 	}
 
-	public boolean isTransparent(){
-		return this.transparency.equals(Transparency.TRANSPARENT);
-	}
-
-	public VerticalAlign getVerticalAlign() {
-		return verticalAlign;
-	}
-
+	/**
+	 * @deprecated Use #Style.setVerticalTextAlign(...) and #Style.setVerticalImageAlign(...) instead
+	 * @param verticalAlign
+	 */
+	@Deprecated
 	public void setVerticalAlign(VerticalAlign verticalAlign) {
-		this.verticalAlign = verticalAlign;
+		if (verticalAlign == null) {
+			verticalTextAlign = null;
+			verticalImageAlign = null;
+		}
+		else {
+			verticalTextAlign = VerticalTextAlign.fromLegacy(verticalAlign.getValue());
+			verticalImageAlign = VerticalImageAlign.fromLegacy(verticalAlign.getValue());
+		}
+	}
+
+	public void setVerticalTextAlign(VerticalTextAlign verticalTextAlign) {
+		this.verticalTextAlign = verticalTextAlign;
+	}
+
+	public VerticalTextAlign getVerticalTextAlign() {
+		return verticalTextAlign;
+	}
+
+	public void setVerticalImageAlign(VerticalImageAlign verticalImageAlign) {
+		this.verticalImageAlign = verticalImageAlign;
+	}
+
+	public VerticalImageAlign getVerticalImageAlign() {
+		return verticalImageAlign;
 	}
 
 	public JRDesignConditionalStyle transformAsConditinalStyle() {
 		JRDesignConditionalStyle ret = new JRDesignConditionalStyle();
 		setJRBaseStyleProperties(ret);
 		return ret;
-		
+
 	}
 
 	public JRDesignStyle transform() {
@@ -241,16 +382,12 @@ public class Style implements Serializable, Cloneable {
 
 		if (getBorderBottom()!= null)
             LayoutUtils.convertBorderToPen(getBorderBottom(),transformedStyle.getLineBox().getBottomPen());
-			//transformedStyle.setBottomBorder(getBorderBottom().getValue());
 		if (getBorderTop()!= null)
             LayoutUtils.convertBorderToPen(getBorderTop(),transformedStyle.getLineBox().getTopPen());
-			//transformedStyle.setTopBorder(getBorderTop().getValue());
 		if (getBorderLeft()!= null)
             LayoutUtils.convertBorderToPen(getBorderLeft(),transformedStyle.getLineBox().getLeftPen());
-			//transformedStyle.setLeftBorder(getBorderLeft().getValue());
 		if (getBorderRight()!= null)
             LayoutUtils.convertBorderToPen(getBorderRight(),transformedStyle.getLineBox().getRightPen());
-			//transformedStyle.setRightBorder(getBorderRight().getValue());
 
 		//Padding
 		transformedStyle.getLineBox().setPadding(getPadding());
@@ -264,24 +401,37 @@ public class Style implements Serializable, Cloneable {
 		if (paddingRight != null)
             transformedStyle.getLineBox().setRightPadding(paddingRight);
 
-		//Aligns
-		if (getHorizontalAlign() != null)
-			transformedStyle.setHorizontalAlignment(HorizontalAlignEnum.getByValue(getHorizontalAlign().getValue() ));
 
-		if (getVerticalAlign() != null)
-			transformedStyle.setVerticalAlignment(VerticalAlignEnum.getByValue(getVerticalAlign().getValue()));
+		//horizontal TEXT Aligns
+		if (horizontalTextAlign != null) {
+			transformedStyle.setHorizontalTextAlign(HorizontalTextAlignEnum.getByName(horizontalTextAlign.getName()));
+		}
 
-		transformedStyle.setBlankWhenNull(blankWhenNull);
+		//Vertical TEXT aligns
+		if (verticalTextAlign != null){
+			transformedStyle.setVerticalTextAlign(VerticalTextAlignEnum.getByName(verticalTextAlign.getName()));
+		}
+
+		//Horizontal Image align
+		if (horizontalImageAlign != null) {
+			transformedStyle.setHorizontalImageAlign(HorizontalImageAlignEnum.getByName(horizontalImageAlign.getName()));
+		}
+		//Vertical Image align
+		if (verticalImageAlign != null){
+			transformedStyle.setVerticalImageAlign(VerticalImageAlignEnum.getByName(verticalImageAlign.getName()));
+		}
+
+		transformedStyle.setBlankWhenNull(Boolean.valueOf(blankWhenNull));
 
 		//Font
 		if (font != null) {
 			transformedStyle.setFontName(font.getFontName());
 			transformedStyle.setFontSize(font.getFontSize());
-			transformedStyle.setBold(font.isBold());
-			transformedStyle.setItalic(font.isItalic());
-			transformedStyle.setUnderline(font.isUnderline());
+			transformedStyle.setBold(Boolean.valueOf(font.isBold()));
+			transformedStyle.setItalic(Boolean.valueOf(font.isItalic()));
+			transformedStyle.setUnderline(Boolean.valueOf(font.isUnderline()));
 			transformedStyle.setPdfFontName(font.getPdfFontName());
-			transformedStyle.setPdfEmbedded(font.isPdfFontEmbedded());
+			transformedStyle.setPdfEmbedded(Boolean.valueOf(font.isPdfFontEmbedded()));
 			transformedStyle.setPdfEncoding(font.getPdfFontEncoding());
 		}
 
@@ -295,7 +445,7 @@ public class Style implements Serializable, Cloneable {
 			transformedStyle.setRotation(RotationEnum.getByValue( getRotation().getValue() ));
 
 		if (getRadius() != null)
-			transformedStyle.setRadius(getRadius().intValue());
+			transformedStyle.setRadius(Integer.valueOf(getRadius().intValue()));
 
 		transformedStyle.setPattern(this.pattern);
 
@@ -306,7 +456,7 @@ public class Style implements Serializable, Cloneable {
         /*transformedStyle.setPen((byte)0);
 		transformedStyle.setFill((byte)1);
 		transformedStyle.setScaleImage(ImageScaleMode.NO_RESIZE.getValue());*/
-	
+
 	}
 
 	public Border getBorderBottom() {
@@ -342,7 +492,7 @@ public class Style implements Serializable, Cloneable {
 	}
 
     /**
-     * use #Style.getBorder().getColor() instead
+     * @deprecated use #Style.getBorder().getColor() instead
      * @return
      */
     @Deprecated
@@ -353,7 +503,7 @@ public class Style implements Serializable, Cloneable {
 	}
 
     /**
-     * Use #Style.setBorder(...) instead
+     * @deprecated Use #Style.setBorder(...) instead
      * @param borderColor
      */
     @Deprecated
@@ -426,40 +576,6 @@ public class Style implements Serializable, Cloneable {
 
 	public void setParentStyleName(String parentStyleName) {
 		this.parentStyleName = parentStyleName;
-	}
-
-	/**
-	 * Creates a blank style (no default values).
-	 * Useful when we need a style with a parent style, not defined properties (null ones) will be inherited
-	 * from parent style
-	 *
-	 * @param name  style name
-	 * @return  Style
-	 */
-	public static Style createBlankStyle(String name){
-		Style style = new Style(name);
-
-		style.setBackgroundColor(null);
-		style.setBorderColor(null);
-		style.setTransparency(null);
-		style.setTextColor(null);
-		style.setBorder(null);
-		style.setFont(null);
-		style.setPadding(null);
-		style.setRadius(null);
-		style.setVerticalAlign(null);
-		style.setHorizontalAlign(null);
-		style.setRotation(null);
-		style.setStreching(null);
-
-		return style;
-
-	}
-
-	public static Style createBlankStyle(String name, String parent){
-		Style s = createBlankStyle(name);
-		s.setParentStyleName(parent);
-		return s;
 	}
 
 	public String getPattern() {
